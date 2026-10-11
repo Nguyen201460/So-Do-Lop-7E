@@ -259,5 +259,13 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </div>
+  <!-- Thư viện đọc file Excel -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- Tab hoặc khu vực Nhập từ Excel -->
+<div id="excel-import-section" class="panel" style="margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px;">
+  <h3>📁 Cập nhật danh sách từ Excel</h3>
+  <input type="file" id="excelFileInput" accept=".xlsx, .xls" />
+  <div id="excel-preview" style="margin-top: 15px; max-height: 300px; overflow-y: auto;"></div>
+</div>
 </body>
 </html>

@@ -8,10 +8,10 @@
   const STORAGE_KEY = 'so-do-lop-github-v2';
   const MAX_HISTORY = 40;
   const DEFAULT_DATA = {
-    title: '10A8',
+    title: '7E',
     rows: 6,
-    cols: 9,
-    aisleCols: [4],
+    cols: 10,
+    aisleCols: [3,8],
     seats: [
       'Dương Hiếu Phong', '', 'Nguyễn Như Ngọc', 'Đỗ Hà Phương', '', 'Hồ Hiếu Phong', '', 'Hoàng Đặng Phương Nguyễn', 'Ngô Tiến Thịnh',
       'Hoàng Đàm Khánh Linh', 'Tạ Khánh Linh', 'Nguyễn Thanh Tâm', 'Hoàng Phương Linh', '', 'Nguyễn Hữu Khánh Huy', 'Nguyễn Diệp Phương', '', 'Đặng Đình Thái',
@@ -875,3 +875,99 @@
 
   bootstrap();
 })();
+// Lắng nghe sự kiện chọn file Excel
+document.getElementById('excelFileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: 'array' });
+    
+    // Lấy sheet đầu tiên trong file Excel
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+    
+    // Chuyển sheet thành mảng JSON (dạng danh sách tên)
+    const rowsData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    
+    processExcelData(rowsData);
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+// Hàm xử lý dữ liệu và tự động tính STT, bỏ qua cột lối đi
+function processExcelData(rawRows) {
+  // Lấy cấu hình hàng, cột và lối đi hiện tại (ví dụ: 6 hàng, 10 cột, lối đi cột 3 và 8)
+  const maxRows = window.currentConfig ? window.currentConfig.rows : 6;
+  const maxCols = window.currentConfig ? window.currentConfig.cols : 10;
+  const aisleCols = window.currentConfig ? window.currentConfig.aisleCols : [3, 8];
+
+  let studentList = [];
+  
+  // Trích xuất danh sách tên từ file Excel (giả sử tên học sinh nằm ở cột đầu tiên hoặc cột 1)
+  rawRows.forEach(row => {
+    // Lấy ô chứa tên (ví dụ cột A hoặc cột B tùy cấu trúc file của bạn)
+    const name = row[0] || row[1]; 
+    if (name && typeof name === 'string' && name.trim() !== '') {
+      studentList.push(name.trim());
+    }
+  });
+
+  let previewHTML = `<table border="1" style="width:100%; border-collapse: collapse; text-align: center;">
+    <thead>
+      <tr style="background: #f2f2f2;">
+        <th>STT (Không tính lối đi)</th>
+        <th>Họ và Tên</th>
+        <th>Hàng (Row)</th>
+        <th>Cột (Col)</th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  let seatIndex = 0;
+  let currentSTT = 1;
+
+  // Xây dựng mảng seats dựa trên ma trận Hàng x Cột, tự động bỏ qua cột lối đi
+  let newSeats = [];
+  for (let r = 0; r < maxRows; r++) {
+    for (let c = 1; c <= maxCols; c++) {
+      if (aisleCols.includes(c)) {
+        // Nếu là cột lối đi, để trống
+        newSeats.push("");
+        previewHTML += `<tr style="background: #fafafa; color: #888;">
+          <td>- (Lối đi)</td>
+          <td>[Lối đi trống]</td>
+          <td>Hàng ${r + 1}</td>
+          <td>Cột ${c}</td>
+        </tr>`;
+      } else {
+        // Nếu là chỗ ngồi học sinh, gán tên từ danh sách Excel theo thứ tự STT
+        let studentName = studentList[seatIndex] || "";
+        newSeats.push(studentName);
+
+        previewHTML += `<tr>
+          <td><b>${currentSTT}</b></td>
+          <td style="text-align: left; padding-left: 10px;">${studentName}</td>
+          <td>Hàng ${r + 1}</td>
+          <td>Cột ${c}</td>
+        </tr>`;
+
+        currentSTT++;
+        seatIndex++;
+      }
+    }
+  }
+
+  previewHTML += `</tbody></table>`;
+  document.getElementById('excel-preview').innerHTML = previewHTML;
+
+  // Lưu lại dữ liệu mới vào cấu hình để render lên sơ đồ
+  if (window.currentConfig) {
+    window.currentConfig.seats = newSeats;
+    render(); // Vẽ lại sơ đồ lớp với dữ liệu mới
+    saveLocal(); // Lưu vào LocalStorage
+    showToast('Đã cập nhật danh sách học sinh từ Excel thành công!');
+  }
+}
