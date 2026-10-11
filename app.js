@@ -8,25 +8,20 @@
   const STORAGE_KEY = 'so-do-lop-github-v2';
   const MAX_HISTORY = 40;
   const DEFAULT_DATA = {
-    title: '7E',
-    rows: 5,
-    cols: 10,
-    aisleCols: [3, 8],
+    title: '10A8',
+    rows: 6,
+    cols: 9,
+    aisleCols: [4],
     seats: [
-      // Hàng 1 (8 ô: 2 ghế, 1 lối đi, 2 ghế, 1 lối đi, 2 ghế)
-      else, skibidi, hehe, hehe, hehe, hehe, hehe, hehe,
-      // Hàng 2
-      hehe, hehe, hehe, hehe, hehe, hehe, hehe, hehe,
-      // Hàng 3
-      hehe, '', '', '', '', '', '', hehe,
-      // Hàng 4
-      '', '', '', '', '', '', '', '',
-      // Hàng 5
-      '', '', '', '', '', '', '', '',
-      // Hàng 6
-      '', '', '', '', '', '', '', '',
+      'Dương Hiếu Phong', '', 'Nguyễn Như Ngọc', 'Đỗ Hà Phương', '', 'Hồ Hiếu Phong', '', 'Hoàng Đặng Phương Nguyễn', 'Ngô Tiến Thịnh',
+      'Hoàng Đàm Khánh Linh', 'Tạ Khánh Linh', 'Nguyễn Thanh Tâm', 'Hoàng Phương Linh', '', 'Nguyễn Hữu Khánh Huy', 'Nguyễn Diệp Phương', '', 'Đặng Đình Thái',
+      'Nguyễn Quang Tùng', 'Trần Thị Như Ngọc', '', 'Nguyễn Minh Quân', '', 'Bùi Tú Phương', 'Nguyễn Thị Khánh Linh', 'Lê Ngọc Diệp', 'Bùi Mậu Toàn',
+      'Nguyễn Văn Hải', 'Nguyễn Quang Phước', 'Hoàng Phạm Diệu Hương', 'Nguyễn Thị Trà My', '', 'Trần Thị Huyền Ngọc', '', 'Đàm Tiến Thanh', 'Nguyễn Thanh Phong',
+      'Nguyễn Lê Minh Đức', 'Bùi Minh Quân', '', 'Nguyễn Phương Thảo', '', 'Đặng Trần Lộc', 'Trần Đức Minh', 'Vũ Anh Thư', 'Nguyễn Thị Khánh Ly',
+      '', 'Nguyễn Vũ Bình Minh', 'Nguyễn Hoàng Tùng', 'Trần Văn Tùng', '', 'Hoàng Anh Thư', 'Nguyễn Yến Vy', 'Chu Công Lộc', ''
     ]
   };
+
   const $ = (selector) => document.querySelector(selector);
   const els = {
     className: $('#className'), rowsInput: $('#rowsInput'), colsInput: $('#colsInput'), aisleInput: $('#aisleInput'),
@@ -693,25 +688,16 @@
     }
   }
 
-  // Thay vì bắt buộc fetch lastest.json gây lỗi khi chạy offline, 
-  // bạn có thể khởi chạy trực tiếp với DEFAULT_DATA:
-  async function initApp() {
-    const local = readLocal();
-    if (local && local.data) {
-      data = normaliseData(local.data);
-      ui.zoom = local.ui?.zoom || 92;
-      if (local.ui?.theme) applyTheme(local.ui.theme, false);
-      previewChanged = local.previewChanged || false;
-    } else {
-      data = normaliseData(DEFAULT_DATA);
-    }
-    render();
+  async function fetchSeed() {
+    const response = await fetch('./lastest.json', { cache: 'no-store' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const payload = await response.json();
+    if (!payload || !Array.isArray(payload.seats)) throw new Error('Invalid format');
+    return normaliseData(payload);
   }
 
-  initApp();
-
   async function reloadSeed(ask = true) {
-    if (ask && !(await askConfirm('Khôi phục bản mẫu?', 'Sơ đồ hiện tại sẽ được thay bằng dữ liệu mặc định.', 'Tải bản mẫu'))) return;
+    if (ask && !(await askConfirm('Khôi phục bản mẫu?', 'Sơ đồ hiện tại sẽ được thay bằng dữ liệu trong file lastest.json. Bản hiện tại vẫn có thể hoàn tác trong phiên này.', 'Tải bản mẫu'))) return;
     try {
       setSaveStatus('Đang đọc lastest.json…', 'loading');
       const seed = await fetchSeed();
@@ -725,18 +711,8 @@
       saveLocal();
       showToast('Đã tải dữ liệu từ lastest.json.');
     } catch (error) {
-      // Khi không tìm thấy file lastest.json, tự động chuyển về lớp 7E mặc định
-      pushHistory();
-      data = normaliseData(DEFAULT_DATA);
-      sourceFingerprint = null;
-      previewChanged = false;
-      hidePreviewPopup();
-      ui.selected = null;
-      render();
-      saveLocal();
-      closeLoadError();
-      setSaveStatus('Đã lưu tự động', 'ok');
-      showToast('Đã tải sơ đồ lớp 7E mặc định.');
+      setSaveStatus('Không tải được sơ đồ', 'error');
+      showLoadError();
     }
   }
 
