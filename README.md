@@ -41,7 +41,7 @@ Mở file [`lastest.json`](./lastest.json) và chỉnh các trường sau:
   "title": "",7E
   "rows": 6,
   "cols": 10,
-  "aisleCols": [3,8],
+  "aisleCols": [2,7],
   "seats": ["Tên học sinh", "", "…"]
 }
 ```

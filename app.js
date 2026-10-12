@@ -11,7 +11,7 @@
     title: '7E',
     rows: 6,
     cols: 10,
-    aisleCols: [3,8],
+    aisleCols: [2,7],
     seats: [
       'Dương Hiếu Phong', '', 'Nguyễn Như Ngọc', 'Đỗ Hà Phương', '', 'Hồ Hiếu Phong', '', 'Hoàng Đặng Phương Nguyễn', 'Ngô Tiến Thịnh',
       'Hoàng Đàm Khánh Linh', 'Tạ Khánh Linh', 'Nguyễn Thanh Tâm', 'Hoàng Phương Linh', '', 'Nguyễn Hữu Khánh Huy', 'Nguyễn Diệp Phương', '', 'Đặng Đình Thái',
@@ -79,7 +79,7 @@
   }
 
   function createEmptyLayout() {
-    return { title: 'Lớp mới', rows: 6, cols: 10, aisleCols: [3,8], seats: Array(54).fill('') };
+    return { title: 'Lớp mới', rows: 6, cols: 10, aisleCols: [2,7], seats: Array(54).fill('') };
   }
 
   function fingerprint(value) {
