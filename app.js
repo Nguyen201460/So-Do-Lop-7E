@@ -971,3 +971,181 @@ function processExcelData(rawRows) {
     showToast('Đã cập nhật danh sách học sinh từ Excel thành công!');
   }
 }
+\$('#resetBtn').addEventListener('click', () => reloadSeed());
+    \$('#jsonFile').addEventListener('change', (event) => importFile(event.target.files[0]));
+    \$('#exportJsonBtn').addEventListener('click', exportJSON);
+    \$('#exportCsvBtn').addEventListener('click', exportCSV);
+    \$('#exportPngBtn').addEventListener('click', exportPNG);
+    \$('#exportPdfBtn').addEventListener('click', exportPDF);
+    \$('#fullscreenBtn').addEventListener('click', toggleFullscreen);
+
+    // Xử lý sự kiện nút Nhập từ Excel
+    \$('#importExcelBtn')?.addEventListener('click', () => {
+      \$('#excelFileInput').click();
+    });
+
+    \$('#excelFileInput')?.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const dataArr = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(dataArr, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const rowsData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          
+          processExcelStudents(rowsData);
+        } catch (err) {
+          showToast('Không thể đọc file Excel. Vui lòng kiểm tra lại định dạng.');
+        } finally {
+          event.target.value = '';
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    els.className.addEventListener('input', () => {
+      data.title = cleanName(els.className.value) || 'Lớp mới';
+      updateTextOnly();
+      markPreviewChanged();
+      saveLocal();
+    });
+
+    els.rowsInput.addEventListener('change', applyLayout);
+    els.colsInput.addEventListener('change', applyLayout);
+    els.aisleInput.addEventListener('change', applyLayout);
+    els.zoomRange.addEventListener('input', () => {
+      ui.zoom = Number.parseInt(els.zoomRange.value, 10) || 92;
+      applyZoomStyles();
+      saveLocal();
+    });
+
+    els.searchInput.addEventListener('input', () => {
+      ui.search = els.searchInput.value;
+      renderRoster();
+    });
+    els.clearSearchBtn.addEventListener('click', () => {
+      els.searchInput.value = '';
+      ui.search = '';
+      renderRoster();
+    });
+
+    els.editForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      saveEdit();
+    });
+    els.deleteSeatBtn.addEventListener('click', () => {
+      if (editingIndex === null) return;
+      const index = editingIndex;
+      closeEdit();
+      transact('Đã xóa học sinh khỏi chỗ ngồi.', () => { data.seats[index] = ''; });
+    });
+    \$('#closeEditBtn').addEventListener('click', closeEdit);
+    els.editModal.addEventListener('click', (event) => { if (event.target === els.editModal) closeEdit(); });
+
+    els.confirmAcceptBtn.addEventListener('click', () => settleConfirm(true));
+    els.confirmCancelBtn.addEventListener('click', () => settleConfirm(false));
+    els.confirmModal.addEventListener('click', (event) => { if (event.target === els.confirmModal) settleConfirm(false));
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        closeEdit();
+        settleConfirm(false);
+        closeLoadError();
+        hidePreviewPopup();
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+        event.preventDefault();
+        if (event.shiftKey) redo(); else undo();
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
+        event.preventDefault();
+        redo();
+      }
+    });
+  }
+
+  // Hàm xử lý danh sách học sinh từ Excel, tự động đánh STT bỏ qua lối đi và cập nhật sơ đồ
+  function processExcelStudents(rawRows) {
+    let studentNames = [];
+    
+    // Trích xuất tên học sinh từ các dòng trong file Excel (quét qua các cột tìm ô có chữ)
+    rawRows.forEach(row => {
+      if (Array.isArray(row)) {
+        row.forEach(cell => {
+          const name = cleanName(cell);
+          // Lọc bỏ các ô là tiêu đề cột hoặc số thứ tự rác
+          if (name && name.toLowerCase() !== 'họ và tên' && name.toLowerCase() !== 'stt' && isNaN(name)) {
+            studentNames.push(name);
+          }
+        });
+      }
+    });
+
+    if (studentNames.length === 0) {
+      showToast('Không tìm thấy danh sách tên học sinh trong file Excel.');
+      return;
+    }
+
+    pushHistory();
+    
+    let studentIndex = 0;
+    let newSeats = Array(data.rows * data.cols).fill('');
+    let sttCount = 1;
+
+    // Duyệt qua từng ô, bỏ qua các cột lối đi, gán STT và tên học sinh
+    for (let r = 0; r < data.rows; r++) {
+      for (let c = 0; c < data.cols; c++) {
+        const index = r * data.cols + c;
+        if (isAisle(index)) {
+          newSeats[index] = ''; // Lối đi để trống
+        } else {
+          if (studentIndex < studentNames.length) {
+            newSeats[index] = studentNames[studentIndex];
+            studentIndex++;
+            sttCount++;
+          } else {
+            newSeats[index] = '';
+          }
+        }
+      }
+    }
+
+    data.seats = newSeats;
+    render();
+    markPreviewChanged();
+    saveLocal();
+    showToast(`Đã cập nhật thành công ${studentIndex} học sinh từ Excel!`);
+  }
+
+  async function init() {
+    const saved = readLocal();
+    if (saved) {
+      data = normaliseData(saved.data);
+      ui.zoom = clamp(Number.parseInt(saved.ui?.zoom, 10) || 92, 50, 160);
+      applyTheme(saved.ui?.theme || 'light', false);
+      previewChanged = saved.previewChanged ?? false;
+      sourceFingerprint = saved.sourceFingerprint || null;
+    } else {
+      applyTheme('light', false);
+      try {
+        setSaveStatus('Đang tải lastest.json…', 'loading');
+        const seed = await fetchSeed();
+        data = seed;
+        sourceFingerprint = fingerprint(seed);
+        previewChanged = false;
+      } catch (error) {
+        setSaveStatus('Chưa có dữ liệu', 'error');
+        showLoadError();
+      }
+    }
+    bindEvents();
+    render();
+    restoreSaveStatus();
+  }
+
+  init();
+})();

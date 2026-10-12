@@ -261,11 +261,14 @@
   </div>
   <!-- Thư viện đọc file Excel -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<!-- Tab hoặc khu vực Nhập từ Excel -->
-<div id="excel-import-section" class="panel" style="margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px;">
-  <h3>📁 Cập nhật danh sách từ Excel</h3>
-  <input type="file" id="excelFileInput" accept=".xlsx, .xls" />
-  <div id="excel-preview" style="margin-top: 15px; max-height: 300px; overflow-y: auto;"></div>
+<!-- Nút chọn file Excel trên giao diện thanh công cụ hoặc sidebar -->
+<button id="importExcelBtn" class="btn" type="button">
+  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+  Nhập từ Excel
+</button>
+
+<!-- Thẻ ẩn để chọn file -->
+<input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display: none;" />
 </div>
 </body>
 </html>
