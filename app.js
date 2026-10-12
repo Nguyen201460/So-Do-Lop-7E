@@ -79,9 +79,9 @@
   }
 
   function createEmptyLayout() {
-    return { title: 'Lớp mới', rows: 6, cols: 9, aisleCols: [4], seats: Array(54).fill('') };
+    return { title: 'Lớp mới', rows: 6, cols: 10, aisleCols: [3,8], seats: Array(54).fill('') };
   }
-
+thay li
   function fingerprint(value) {
     const string = JSON.stringify(normaliseData(value));
     let hash = 2166136261;
