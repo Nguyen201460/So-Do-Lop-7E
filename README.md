@@ -39,7 +39,7 @@ Mở file [`lastest.json`](./lastest.json) và chỉnh các trường sau:
 ```json
 {
   "title": "",7E
-  "rows": 6,
+  "rows": 5,
   "cols": 10,
   "aisleCols": [2,7],
   "seats": ["Tên học sinh", "", "…"]
